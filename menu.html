@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Меню — тренажёр</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #f5f5f7; color: #1d1d1f; min-height: 100vh;
+    padding: 20px; padding-bottom: 60px;
+  }
+  .container { max-width: 640px; margin: 0 auto; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 20px; margin: 0 0 12px; }
+  .subtitle { color: #6e6e73; font-size: 14px; margin-bottom: 24px; }
+  .card {
+    background: #fff; border-radius: 14px; padding: 16px;
+    margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    cursor: pointer; display: flex; justify-content: space-between;
+    align-items: center; transition: transform 0.08s;
+  }
+  .card:active { transform: scale(0.98); }
+  .card .title { font-weight: 500; font-size: 16px; }
+  .card .subtitle { margin: 2px 0 0; }
+  .card .count { color: #8e8e93; font-size: 14px; }
+  .card .arrow { color: #c7c7cc; font-size: 20px; }
+  .btn {
+    background: #007aff; color: #fff; border: none; border-radius: 12px;
+    padding: 15px 20px; font-size: 16px; font-weight: 500;
+    cursor: pointer; width: 100%; margin-top: 10px; font-family: inherit;
+  }
+  .btn:active { opacity: 0.7; }
+  .btn:disabled { background: #c7c7cc; }
+  .btn.secondary { background: #e5e5ea; color: #1d1d1f; }
+  .back {
+    background: none; border: none; color: #007aff; font-size: 16px;
+    cursor: pointer; padding: 0; margin-bottom: 16px; font-family: inherit;
+  }
+  .input-row { display: flex; gap: 8px; margin-top: 8px; }
+  input[type="text"] {
+    flex: 1; padding: 15px 16px; font-size: 16px;
+    border: 1.5px solid #d2d2d7; border-radius: 12px; font-family: inherit;
+    background: #fff; outline: none;
+  }
+  input[type="text"]:focus { border-color: #007aff; }
+  .add-btn {
+    background: #007aff; color: #fff; border: none; border-radius: 12px;
+    padding: 0 18px; font-size: 15px; font-weight: 500;
+    cursor: pointer; font-family: inherit; white-space: nowrap;
+  }
+  .add-btn:active { opacity: 0.7; }
+  .answers { margin: 14px 0; display: flex; flex-wrap: wrap; gap: 8px; min-height: 20px; }
+  .chip {
+    background: #e5e5ea; padding: 8px 6px 8px 14px; border-radius: 20px;
+    font-size: 14px; display: flex; align-items: center; gap: 6px;
+  }
+  .chip .x { color: #8e8e93; cursor: pointer; font-weight: bold; padding: 2px 8px; font-size: 16px; }
+  .result-section { background: #fff; border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+  .result-section h3 { margin: 0 0 10px; font-size: 16px; }
+  .result-section.ok h3 { color: #34c759; }
+  .result-section.miss h3 { color: #ff3b30; }
+  .answer-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 0; font-size: 15px; border-bottom: 1px solid #f0f0f0;
+  }
+  .answer-item:last-child { border-bottom: none; }
+  .answer-item .icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+  .answer-item.ok .icon { color: #34c759; }
+  .answer-item.miss .icon { color: #ff3b30; }
+  .answer-item.miss { color: #8e8e93; }
+  .big-title { font-size: 22px; font-weight: 600; margin: 8px 0 4px; line-height: 1.25; }
+  .hint { color: #8e8e93; font-size: 14px; margin-bottom: 14px; }
+  .score { font-size: 15px; color: #6e6e73; margin-bottom: 14px; line-height: 1.5; }
+  .score b { color: #1d1d1f; font-size: 17px; }
+  .score .ok-n { color: #34c759; font-weight: 600; }
+  .score .miss-n { color: #ff3b30; font-weight: 600; }
+  .verdict {
+    padding: 16px; border-radius: 12px; font-weight: 600;
+    font-size: 16px; margin-bottom: 16px; text-align: center;
+  }
+  .dish-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 15px;
+  }
+  .dish-row:last-child { border-bottom: none; }
+  .dish-row .num { font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="container" id="app"></div>
+<script>
+const DATA = {
+  "Закуски": [
+    { d: "Мясные специалитеты", i: "карпаччо из курицы, карбонат, куриный рулет, бастурма, говяжий язык, соус гранатовый, горчица" },
+    { d: "Рыбная тарелка", i: "лосось 3 вида, угорь в соусе унаги" },
+    { d: "Сырное плато", i: "гауда, пармезан, камамбер, дор блю, виноград, мёд, апельсин, орехи" },
+    { d: "Домашние разносолы", i: "зелёные помидоры, перец, капуста квашеная и красная, чеснок, огурец, зелень" },
+    { d: "Фруктовая тарелка", i: "киви, виноград, апельсин, ананас, банан, яблоко" },
+    { d: "Овощная тарелка", i: "огурцы, томаты, перец болгарский" },
+    { d: "Тар-Тар из говядины", i: "говядина, каперсы, красный лук, солёные огурцы, устричный соус, желток, два тоста хлеба" },
+    { d: "Селедочка с ароматным картофелем", i: null },
+    { d: "Пивная тарелка", i: "креветки отварные и темпура, гренки, мини колбаски, наггетсы, сырные палочки, фри, соус сладкий Чили, соус чесночный" },
+    { d: "Русский сет", i: "сельдь, грудинка свиная, картофель отварной, огурцы солёные, капуста квашеная и красная, хлеб бородинский, лук зелёный, горчица" },
+    { d: "Гренки по-ирландски", i: "пармезан, чесночное масло" },
+    { d: "Барабулька", i: "зелень, лимон, соус чесночный" },
+    { d: "Крокеты из форели", i: null },
+    { d: "Хачапури по-аджарски", i: null }
+  ],
+  "Креветки": [
+    { d: "Темпура", i: null },
+    { d: "Отварные", i: null },
+    { d: "Жареные", i: null }
+  ],
+  "Мидии": [
+    { d: "Сливочные", i: "сливочный соус, сливки, устричный соус, соевый соус, хондаш" },
+    { d: "Запечённые спайси", i: "майонез, сладкий чили, спайси" },
+    { d: "Запечённые сырные", i: "моцарелла, зелень, чеснок, майонез" }
+  ],
+  "Брускетты": [
+    { d: "С лососем", i: "творожный сыр, микс салата, огурец, лосось" },
+    { d: "С креветкой спайси", i: "творожный сыр, микс салата, огурец, креветка, соус спайси" },
+    { d: "С томатами и песто", i: null },
+    { d: "С ростбифом", i: null }
+  ],
+  "Салаты": [
+    { d: "Тёплый с морепродуктами", i: "микс салатов, сегмент апельсина, кальмар, мидии, креветки" },
+    { d: "Греческий", i: "сыр фета, маслины, томаты, огурцы, перец болгарский, оливковое масло, прованские травы, лук" },
+    { d: "Виттело Тоннато", i: "говяжья вырезка, соус на основе тунца, микс салата, огурцы, цуккини, томаты" },
+    { d: "Цезарь с цыплёнком", i: "микс салатов, фирменный соус, помидоры, сыр пармезан, куриное филе, перепелиные яйца, крутоны из багета" },
+    { d: "Цезарь с тигровыми креветками", i: "микс салатов, тигровые креветки, сыр пармезан, яйца перепелиные, крутоны, помидоры, фирменный соус" },
+    { d: "С хрустящими баклажанами, томатами и творожным сыром", i: null }
+  ],
+  "Пасты, ньокки, вареники": [
+    { d: "Ньокки с креветкой", i: "ньокки картофельные, креветки, брокколи, сливочный соус, пармезан" },
+    { d: "Паста неро с морепродуктами", i: "соус сливочный, неро паста, мидии, кальмары, креветки" },
+    { d: "Феттучини с курицей и грибами", i: "помидоры черри, микрозелень" },
+    { d: "Карбонара", i: "спагетти, бекон, сливочный соус" },
+    { d: "Вареники царские", i: "вареники с семгой в сливочном соусе, пармезан" }
+  ],
+  "Супы": [
+    { d: "Грибной крем суп", i: "грибы, сливки, специи, сухарики" },
+    { d: "Борщ Ставропольский", i: "капуста, квашеная капуста" },
+    { d: "Том ям", i: "кокосовое молоко, креветки, мидии, кальмары, куриное филе, грибы, рис, лайм, перец чили" },
+    { d: "Лагман с говядиной", i: "говядина, картофель, перец болгарский, лук, лапша" },
+    { d: "Охотничья солянка", i: "карбонат, охотничьи колбаски, куриное филе, огурец, маслины, сметана, лимон, хлеб" },
+    { d: "Куриный бульон с домашней лапшой", i: "яйца перепелиные, куриное филе, лапша, крутоны, зелень" }
+  ],
+  "Горячее: Рыба": [
+    { d: "Филе судака с овощным соте", i: null },
+    { d: "Сёмга на сливочной спарже", i: null },
+    { d: "Гребешки с рисом басмати", i: null }
+  ],
+  "Горячее: Мясо": [
+    { d: "Утиная ножка конфи с трюфельным пюре", i: null },
+    { d: "Куриное филе с овощами гриль", i: null },
+    { d: "Стейк из свинины с перечным соусом и мятым картофелем", i: null },
+    { d: "Итальянский стейк Оссобуко", i: null },
+    { d: "Медальоны из свинины под грибным соусом", i: null },
+    { d: "Филе миньон с овощами гриль", i: null },
+    { d: "Садж три мяса", i: "куриное филе, говяжья вырезка, свинина, цуккини, баклажан, картофель айдахо, томаты, перец болгарский, лук, чеснок" },
+    { d: "Гриль Плато", i: "свиная и говяжья вырезка, куриное филе, овощи гриль, картофель айдахо, сливочно-грибной соус" }
+  ],
+  "Гарниры": [
+    { d: "Овощи гриль", i: "баклажан, помидоры, цуккини, болгарский перец" },
+    { d: "Спаржа", i: null },
+    { d: "Рис басмати", i: null },
+    { d: "Пюре", i: null }
+  ],
+  "Соусы": [
+    { d: "Сладкий Чили", i: null },
+    { d: "Чесночный", i: null },
+    { d: "Тар-тар", i: "маринованные огурцы, оливки, майонез, каперсы" },
+    { d: "Кавказский", i: null },
+    { d: "BBQ", i: null },
+    { d: "Кетчуп", i: null },
+    { d: "Сырный", i: null }
+  ],
+  "Мангал / Шашлык": [
+    { d: "Свиные рёбра", i: "картофель айдахо, огурцы" },
+    { d: "Рёбра по-мексикански", i: "картофель фри, кукуруза" },
+    { d: "Рёбра вишня BBQ", i: "картофель фри" },
+    { d: "Бараньи пистолеты", i: null },
+    { d: "Свинина шея", i: null },
+    { d: "Люля-кебаб из курицы", i: null }
+  ],
+  "Рыба": [
+    { d: "Стейк из сёмги", i: "лимон, микс салата" },
+    { d: "Дорада с лимоном", i: null }
+  ],
+  "Овощи": [
+    { d: "Ассорти", i: "баклажан, цуккини, помидор, болгарский перец" },
+    { d: "Картофель", i: null },
+    { d: "Шампиньоны", i: null }
+  ],
+  "Стрит фуд": [
+    { d: "Картофель фри", i: null },
+    { d: "Наггетсы", i: null },
+    { d: "Сырные палочки", i: null },
+    { d: "Тако с курицей", i: "лепешка тортилья, фасоль, томаты, куриное филе, соус фирменный, пармезан" },
+    { d: "Тако с креветкой", i: "лепешка, креветка тигровая, соус спайси, лист салата, авокадо" },
+    { d: "Мерида с курицей", i: "куриное филе, огурцы, томаты, картофель фри, лук, чесночный соус, булочки" }
+  ],
+  "Бургеры": [
+    { d: "Бургер с говядиной", i: "говяжья котлета, лист салата, лук красный, томаты, сыр гауда, маринованные огурцы, горчица" },
+    { d: "Бургер с курицей", i: "куриная котлета, лист салата, сыр гауда, помидоры, красный лук, маринованные огурцы" },
+    { d: "Бургер 2.0", i: "две говяжьи котлеты, яйцо, красный лук, лист салата, сыр гауда, помидоры, маринованные огурцы, горчица, картофель фри" }
+  ],
+  "Пиццы": [
+    { d: "Охотничья", i: "моцарелла, охотничьи колбаски, бекон, корнишоны, куриное филе, соус BBQ" },
+    { d: "Груша Горгонзола", i: "моцарелла, горгонзола, груша, мята, сахарная пудра" },
+    { d: "Диабло с ростбифом", i: "моцарелла, говяжья вырезка, маринованные огурцы, халапеньо" },
+    { d: "Цезарь", i: "моцарелла, соус Цезарь, сыр пармезан, куриное филе, помидоры черри, лист салата" },
+    { d: "Пепперони", i: "моцарелла, пеперонни" },
+    { d: "Четыре сыра", i: "моцарелла, гауда, пармезан, горгонзола" },
+    { d: "Капричоза", i: "моцарелла, ветчина, грибы" },
+    { d: "Маргарита", i: "моцарелла, томаты" },
+    { d: "Четыре Сезона", i: "моцарелла, томаты, пеперонни, грибы, куриное филе, сыр гауда, белый соус" }
+  ],
+  "Роллы": [
+    { d: "Аудит", i: "лосось, авокадо, мясо-краб, омлет" },
+    { d: "Чёрный дракон", i: "лосось, огурец, сливочный сыр, ширатаки, магаро" },
+    { d: "Филадельфия", i: "лосось, огурец, сливочный сыр" },
+    { d: "Филадельфия Хот", i: "лосось, огурец, сливочный сыр, ширатаки" },
+    { d: "Канадский ролл", i: "лосось, огурец, сливочный сыр" },
+    { d: "Калифорния", i: "креветка, авокадо, магаро, огурец" },
+    { d: "Филадельфия Спайси", i: "лосось, огурец, сливочный сыр" },
+    { d: "Ролл с лососем", i: "лосось, огурец, сливочный сыр" },
+    { d: "Креветка Хот", i: "креветка, магаро, огурец" },
+    { d: "Ролл с курицей", i: "курица, сыр, огурец" },
+    { d: "Запечённый краб-ролл", i: "краб, огурец" },
+    { d: "Аляска", i: "лосось, авокадо" },
+    { d: "Сет Филадельфия", i: null },
+    { d: "Сет Запечённый", i: null },
+    { d: "Сет Душевный", i: null },
+    { d: "Сет Филадельфия Микс", i: null }
+  ]
+};
+
+// === UTILS ===
+function normalize(s) {
+  return String(s).toLowerCase().replace(/ё/g, 'е')
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/[^\wа-яА-Я0-9]+/g, ' ')
+    .trim().replace(/\s+/g, ' ');
+}
+function lev(a, b) {
+  const m = a.length, n = b.length;
+  if (!m) return n; if (!n) return m;
+  let prev = Array.from({length: n+1}, (_, j) => j);
+  for (let i = 1; i <= m; i++) {
+    const cur = [i];
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i-1] === b[j-1] ? 0 : 1;
+      cur[j] = Math.min(prev[j] + 1, cur[j-1] + 1, prev[j-1] + cost);
+    }
+    prev = cur;
+  }
+  return prev[n];
+}
+function isMatch(u, c) {
+  const nu = normalize(u), nc = normalize(c);
+  if (!nu || !nc) return false;
+  if (nu === nc) return true;
+  const d = lev(nu, nc);
+  const thresh = Math.max(1, Math.floor(Math.max(nu.length, nc.length) * 0.15));
+  return d <= thresh;
+}
+function matchAnswers(user, correct) {
+  const usedU = new Set(), usedC = new Set();
+  const pairs = [];
+  for (let i = 0; i < user.length; i++)
+    for (let j = 0; j < correct.length; j++)
+      if (isMatch(user[i], correct[j]))
+        pairs.push({ i, j, d: lev(normalize(user[i]), normalize(correct[j])) });
+  pairs.sort((a, b) => a.d - b.d);
+  for (const p of pairs) {
+    if (usedU.has(p.i) || usedC.has(p.j)) continue;
+    usedU.add(p.i); usedC.add(p.j);
+  }
+  const userResults = user.map((u, i) => ({ text: u, ok: usedU.has(i) }));
+  const miss = [];
+  for (let j = 0; j < correct.length; j++) if (!usedC.has(j)) miss.push(correct[j]);
+  const okCount = usedU.size;
+  const missCount = miss.length;
+  return { userResults, miss, okCount, missCount };
+}
+function splitIngredients(str) {
+  if (!str) return [];
+  const parts = []; let depth = 0, cur = '';
+  for (const ch of str) {
+    if (ch === '(' || ch === '[') depth++;
+    else if (ch === ')' || ch === ']') depth--;
+    if (ch === ',' && depth === 0) { parts.push(cur.trim()); cur = ''; }
+    else cur += ch;
+  }
+  if (cur.trim()) parts.push(cur.trim());
+  return parts.filter(Boolean);
+}
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// === STATE ===
+const state = {
+  screen: 'home', mode: null, category: null,
+  userAnswers: [], lastMatch: null,
+  dishQueue: [], dishIndex: 0, results: []
+};
+
+const app = document.getElementById('app');
+
+// === RENDER ===
+function render() {
+  const screens = {
+    home: renderHome,
+    'm1-cat': () => renderCatPicker(1),
+    'm1-test': renderTest1,
+    'm1-result': renderResult1,
+    'm2-cat': () => renderCatPicker(2),
+    'm2-test': renderTest2,
+    'm2-dish-result': renderDishResult,
+    'm2-final': renderFinal
+  };
+  screens[state.screen]();
+}
+
+function renderHome() {
+  const totalCats = Object.keys(DATA).length;
+  const totalDishes = Object.values(DATA).reduce((s, a) => s + a.length, 0);
+  const totalIng = Object.values(DATA).reduce((s, a) => s + a.filter(d => d.i).length, 0);
+  app.innerHTML = `
+    <h1>Тренажёр меню</h1>
+    <div class="subtitle">${totalCats} категорий · ${totalDishes} позиций · ${totalIng} с составом</div>
+    <div class="card" data-act="m1">
+      <div>
+        <div class="title">Категория → блюда</div>
+        <div class="subtitle">Назвать все блюда категории</div>
+      </div>
+      <div class="arrow">›</div>
+    </div>
+    <div class="card" data-act="m2">
+      <div>
+        <div class="title">Блюдо → ингредиенты</div>
+        <div class="subtitle">Пройти все блюда категории по очереди</div>
+      </div>
+      <div class="arrow">›</div>
+    </div>
+  `;
+  app.querySelector('[data-act="m1"]').onclick = () => { state.screen = 'm1-cat'; render(); };
+  app.querySelector('[data-act="m2"]').onclick = () => { state.screen = 'm2-cat'; render(); };
+}
+
+function renderCatPicker(mode) {
+  const cats = Object.keys(DATA).map(name => {
+    const arr = DATA[name];
+    const count = mode === 1 ? arr.length : arr.filter(d => d.i).length;
+    return { name, count };
+  }).filter(c => c.count > 0);
+
+  app.innerHTML = `
+    <button class="back" data-act="back">‹ Назад</button>
+    <h2>${mode === 1 ? 'Категория → блюда' : 'Блюдо → ингредиенты'}</h2>
+    <div class="hint">${mode === 1 ? 'Выбери категорию' : 'Выбери категорию — пройдёшь все блюда с составом'}</div>
+    ${cats.map(c => `
+      <div class="card" data-cat="${esc(c.name)}">
+        <div class="title">${esc(c.name)}</div>
+        <div class="count">${c.count}</div>
+      </div>`).join('')}
+  `;
+  app.querySelector('[data-act="back"]').onclick = () => { state.screen = 'home'; render(); };
+  app.querySelectorAll('[data-cat]').forEach(el => el.onclick = () => {
+    state.category = el.dataset.cat;
+    state.userAnswers = [];
+    state.lastMatch = null;
+    state.mode = mode;
+    if (mode === 1) {
+      state.screen = 'm1-test';
+    } else {
+      state.dishQueue = DATA[state.category].filter(d => d.i);
+      state.dishIndex = 0;
+      state.results = [];
+      state.screen = 'm2-test';
+    }
+    render();
+  });
+}
+
+// === input helpers ===
+function attachInput(placeholder, onAdd, getBtnId) {
+  const input = document.getElementById('input');
+  const addBtn = document.getElementById('add');
+  input.focus();
+  const add = () => {
+    const v = input.value.trim();
+    if (!v) return;
+    onAdd(v);
+    input.value = '';
+    updateChips();
+    input.focus();
+  };
+  input.onkeydown = e => {
+    if (e.key === 'Enter') { e.preventDefault(); add(); }
+  };
+  addBtn.onclick = add;
+}
+function updateChips() {
+  const el = document.getElementById('answers');
+  if (!el) return;
+  el.innerHTML = state.userAnswers.map((a, i) =>
+    `<div class="chip">${esc(a)}<span class="x" data-i="${i}">×</span></div>`).join('');
+  el.querySelectorAll('.x').forEach(x => x.onclick = () => {
+    state.userAnswers.splice(Number(x.dataset.i), 1);
+    updateChips();
+    document.getElementById('input').focus();
+  });
+}
+
+// === MODE 1 ===
+function renderTest1() {
+  app.innerHTML = `
+    <button class="back" data-act="back">‹ Назад</button>
+    <div class="big-title">${esc(state.category)}</div>
+    <div class="hint">Назови все блюда категории — в любом порядке</div>
+    <div class="answers" id="answers"></div>
+    <div class="input-row">
+      <input type="text" id="input" placeholder="Название блюда..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="done">
+      <button class="add-btn" id="add">Добавить</button>
+    </div>
+    <button class="btn" id="done">Готово</button>
+  `;
+  attachInput('Название блюда...', v => state.userAnswers.push(v));
+  document.getElementById('done').onclick = () => {
+    const correct = DATA[state.category].map(d => d.d);
+    state.lastMatch = matchAnswers(state.userAnswers, correct);
+    state.screen = 'm1-result';
+    render();
+  };
+  app.querySelector('[data-act="back"]').onclick = () => { state.screen = 'm1-cat'; render(); };
+  updateChips();
+}
+
+function renderResult1() {
+  const { userResults, miss, okCount, missCount } = state.lastMatch;
+  const total = okCount + missCount;
+  const pct = total ? Math.round(okCount / total * 100) : 0;
+  const allOk = missCount === 0 && userResults.every(u => u.ok);
+  app.innerHTML = `
+    <div class="hint">${esc(state.category)}</div>
+    <div class="big-title">Результат</div>
+    <div class="score">
+      <span class="ok-n">✓ ${okCount} правильных</span> ·
+      <span class="miss-n">✗ ${missCount} неправильных</span>
+      <div style="margin-top:4px">${pct}% из ${total}</div>
+    </div>
+    ${userResults.length ? `
+      <div class="result-section">
+        <h3 style="color:#1d1d1f">Твои ответы</h3>
+        ${userResults.map(u => `
+          <div class="answer-item ${u.ok ? 'ok' : 'miss'}">
+            <span class="icon">${u.ok ? '✓' : '✗'}</span>
+            <span>${esc(u.text)}</span>
+          </div>`).join('')}
+      </div>` : ''}
+    ${miss.length ? `
+      <div class="result-section">
+        <h3 style="color:#1d1d1f">Не названо</h3>
+        ${miss.map(m => `
+          <div class="answer-item miss">
+            <span class="icon">✗</span>
+            <span>${esc(m)}</span>
+          </div>`).join('')}
+      </div>` : ''}
+    ${allOk ? `<div class="verdict" style="background:#34c75922; color:#34c759">Идеально! Всё названо ✓</div>` : ''}
+    <button class="btn" id="retry">Пройти ещё раз</button>
+    <button class="btn secondary" id="toList">К категориям</button>
+  `;
+  document.getElementById('retry').onclick = () => {
+    state.userAnswers = []; state.lastMatch = null;
+    state.screen = 'm1-test'; render();
+  };
+  document.getElementById('toList').onclick = () => {
+    state.lastMatch = null; state.screen = 'm1-cat'; render();
+  };
+}
+
+// === MODE 2 ===
+function renderTest2() {
+  const dish = state.dishQueue[state.dishIndex];
+  const total = state.dishQueue.length;
+  app.innerHTML = `
+    <button class="back" data-act="back">‹ Назад</button>
+    <div class="hint">Блюдо ${state.dishIndex + 1} из ${total}</div>
+    <div class="big-title">${esc(dish.d)}</div>
+    <div class="hint">Назови все ингредиенты</div>
+    <div class="answers" id="answers"></div>
+    <div class="input-row">
+      <input type="text" id="input" placeholder="Ингредиент..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="done">
+      <button class="add-btn" id="add">Добавить</button>
+    </div>
+    <button class="btn" id="done">Готово</button>
+  `;
+  attachInput('Ингредиент...', v => state.userAnswers.push(v));
+  document.getElementById('done').onclick = () => {
+    const correct = splitIngredients(dish.i);
+    const match = matchAnswers(state.userAnswers, correct);
+    state.lastMatch = match;
+    state.results.push({ dish: dish.d, ok: match.okCount, miss: match.missCount });
+    state.screen = 'm2-dish-result';
+    render();
+  };
+  app.querySelector('[data-act="back"]').onclick = () => {
+    if (state.userAnswers.length === 0 || confirm('Выйти из прохождения? Прогресс не сохранится.')) {
+      state.screen = 'm2-cat';
+      state.results = []; state.dishIndex = 0; state.userAnswers = [];
+      render();
+    }
+  };
+  updateChips();
+}
+
+function renderDishResult() {
+  const dish = state.dishQueue[state.dishIndex];
+  const isLast = state.dishIndex + 1 >= state.dishQueue.length;
+  const { userResults, miss, okCount, missCount } = state.lastMatch;
+  app.innerHTML = `
+    <div class="hint">Блюдо ${state.dishIndex + 1} из ${state.dishQueue.length}</div>
+    <div class="big-title">${esc(dish.d)}</div>
+    <div class="score">
+      <span class="ok-n">✓ ${okCount} правильных</span> ·
+      <span class="miss-n">✗ ${missCount} неправильных</span>
+    </div>
+    ${userResults.length ? `
+      <div class="result-section">
+        <h3 style="color:#1d1d1f">Твои ответы</h3>
+        ${userResults.map(u => `
+          <div class="answer-item ${u.ok ? 'ok' : 'miss'}">
+            <span class="icon">${u.ok ? '✓' : '✗'}</span>
+            <span>${esc(u.text)}</span>
+          </div>`).join('')}
+      </div>` : ''}
+    ${miss.length ? `
+      <div class="result-section">
+        <h3 style="color:#1d1d1f">Не названо</h3>
+        ${miss.map(m => `
+          <div class="answer-item miss">
+            <span class="icon">✗</span>
+            <span>${esc(m)}</span>
+          </div>`).join('')}
+      </div>` : ''}
+    <button class="btn" id="next">${isLast ? 'К итогам раздела →' : 'Далее →'}</button>
+  `;
+  document.getElementById('next').onclick = () => {
+    if (isLast) {
+      state.screen = 'm2-final';
+    } else {
+      state.dishIndex++;
+      state.userAnswers = [];
+      state.lastMatch = null;
+      state.screen = 'm2-test';
+    }
+    render();
+  };
+}
+
+function renderFinal() {
+  let totalOk = 0, totalMiss = 0;
+  state.results.forEach(r => { totalOk += r.ok; totalMiss += r.miss; });
+  const totalAll = totalOk + totalMiss;
+  const pct = totalAll ? Math.round(totalOk / totalAll * 100) : 0;
+
+  let verdict, color;
+  if (pct === 100) { verdict = 'Раздел изучен полностью 🎉'; color = '#34c759'; }
+  else if (pct >= 85) { verdict = 'Почти идеально — есть пара недочётов'; color = '#34c759'; }
+  else if (pct >= 70) { verdict = 'Хороший результат, но стоит повторить'; color = '#ff9500'; }
+  else if (pct >= 50) { verdict = 'Стоит подучить раздел'; color = '#ff9500'; }
+  else { verdict = 'Раздел нужно учить заново'; color = '#ff3b30'; }
+
+  app.innerHTML = `
+    <div class="hint">${esc(state.category)}</div>
+    <div class="big-title">Раздел пройден</div>
+    <div class="score">
+      Правильно: <b>${totalOk}</b> из ${totalAll} · ${pct}%
+    </div>
+    <div class="verdict" style="background:${color}22; color:${color}">${verdict}</div>
+    <div class="result-section">
+      <h3 style="color:#1d1d1f">По блюдам</h3>
+      ${state.results.map(r => {
+        const t = r.ok + r.miss;
+        const p = t ? Math.round(r.ok / t * 100) : 0;
+        const c = r.miss === 0 ? '#34c759' : p >= 60 ? '#ff9500' : '#ff3b30';
+        return `<div class="dish-row">
+          <div style="flex:1; padding-right:10px">${esc(r.dish)}</div>
+          <div class="num" style="color:${c}">${r.ok}/${t}</div>
+        </div>`;
+      }).join('')}
+    </div>
+    <button class="btn" id="retry">Пройти ещё раз</button>
+    <button class="btn secondary" id="toList">К категориям</button>
+  `;
+  document.getElementById('retry').onclick = () => {
+    state.dishIndex = 0; state.results = []; state.userAnswers = []; state.lastMatch = null;
+    state.screen = 'm2-test'; render();
+  };
+  document.getElementById('toList').onclick = () => {
+    state.results = []; state.dishIndex = 0; state.userAnswers = []; state.lastMatch = null;
+    state.screen = 'm2-cat'; render();
+  };
+}
+
+render();
+</script>
+</body>
+</html>
